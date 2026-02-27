@@ -1,0 +1,373 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  FileText, Database, Search, Cpu, BookOpen, ExternalLink, 
+  ChevronRight, BrainCircuit, Activity, CheckCircle2, FlaskConical,
+  Layers, Zap, Github, MessageSquare, ShieldCheck
+} from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
+  Legend, CartesianGrid, Cell
+} from 'recharts';
+
+// --- DATA FROM RESEARCH PAPER ---
+const BENCHMARK_DATA = [
+  { metric: 'Faithfulness', Ada: 0.703, MedCPT: 0.687 },
+  { metric: 'Correctness', Ada: 0.968, MedCPT: 0.980 }, // Significant
+  { metric: 'Recall', Ada: 0.743, MedCPT: 0.722 },
+  { metric: 'Precision', Ada: 0.923, MedCPT: 0.908 },
+  { metric: 'Relevancy', Ada: 0.800, MedCPT: 0.810 },
+];
+
+const TEAM = [
+  { name: 'Vatsal Pravinbhai Patel', role: 'Principal Research Engineer', focus: 'AI Architecture & RAG Pipelines' },
+  { name: 'Elena Jolkver', role: 'Co-Author', focus: 'Evaluation & Benchmarking' },
+  { name: 'Anne Schwerk', role: 'Co-Author', focus: 'Biomedical AI & Mentorship' },
+];
+
+// --- RAG SIMULATION COMPONENT ---
+const RAGSimulation = () => {
+  const [step, setStep] = useState(0);
+  const STEPS = ['upload', 'embed', 'query', 'retrieve', 'answer'];
+
+  useEffect(() => {
+    const timings = [2500, 3000, 3000, 2500, 5000];
+    const timer = setTimeout(() => {
+      setStep((prev) => (prev + 1) % STEPS.length);
+    }, timings[step]);
+    return () => clearTimeout(timer);
+  }, [step]);
+
+  const current = STEPS[step];
+
+  return (
+    <div className="relative w-full max-w-2xl mx-auto rounded-2xl bg-slate-950 border border-white/10 shadow-2xl overflow-hidden ring-1 ring-white/5 font-sans">
+      {/* MacOS style window header */}
+      <div className="h-10 bg-slate-900 border-b border-white/5 flex items-center px-4 gap-2">
+        <div className="flex gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
+          <div className="w-3 h-3 rounded-full bg-amber-500/80"></div>
+          <div className="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+        </div>
+        <span className="mx-auto text-xs text-slate-400 font-medium">MedDiscover Workspace</span>
+      </div>
+
+      <div className="h-[400px] relative bg-[#0a0a0c] p-6 flex flex-col">
+        <AnimatePresence mode="wait">
+          {/* STEP 1: UPLOAD */}
+          {current === 'upload' && (
+            <motion.div key="upload" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="h-full flex flex-col items-center justify-center gap-4 text-center">
+              <div className="w-20 h-20 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center relative overflow-hidden">
+                <motion.div animate={{ y: [20, -20] }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }} className="absolute inset-0 bg-gradient-to-t from-blue-500/20 to-transparent opacity-50"></motion.div>
+                <FileText className="w-10 h-10 text-blue-400 relative z-10" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">Ingesting Corpus</h3>
+                <p className="text-sm text-slate-500">ICD-10 E70–E88 Metabolic Disorders</p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* STEP 2: EMBED */}
+          {current === 'embed' && (
+            <motion.div key="embed" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col items-center justify-center gap-6">
+              <div className="flex items-center gap-4">
+                <div className="p-4 rounded-xl bg-slate-800 border border-white/10"><FileText className="text-slate-400" /></div>
+                <motion.div animate={{ x: [0, 20, 0] }} transition={{ repeat: Infinity, duration: 1 }}><ChevronRight className="text-blue-500" /></motion.div>
+                <div className="p-4 rounded-xl bg-blue-500/20 border border-blue-500/40 relative"><Database className="text-blue-400" /></div>
+              </div>
+              <div className="text-center">
+                <h3 className="text-white font-semibold">MedCPT Embedding</h3>
+                <p className="text-sm text-slate-500">Chunking: 500 tokens | Vectorizing 768-D</p>
+                <div className="w-48 h-1 bg-slate-800 rounded-full mt-4 mx-auto overflow-hidden">
+                  <motion.div initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ duration: 2.5 }} className="h-full bg-blue-500" />
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* STEP 3 & 4: QUERY & RETRIEVE */}
+          {(current === 'query' || current === 'retrieve') && (
+            <motion.div key="query" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="flex flex-col h-full gap-4">
+              <div className="flex gap-3 items-start">
+                <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0">U</div>
+                <div className="bg-slate-800 border border-white/10 p-3 rounded-2xl rounded-tl-sm text-sm text-white">
+                  What metabolites are associated with early-stage Gaucher disease Type 1?
+                </div>
+              </div>
+
+              {current === 'retrieve' && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="pl-11 pr-4">
+                  <div className="flex items-center gap-2 text-xs text-blue-400 mb-2">
+                    <Search className="w-3 h-3" /> FAISS Top-K Retrieval (MedCPT)
+                  </div>
+                  <div className="space-y-2">
+                    <div className="bg-blue-950/30 border border-blue-900/50 p-2 rounded-lg text-xs text-slate-300">
+                      <span className="text-slate-500">[Doc 14, Chunk 2]</span> ...elevated plasma glucosylsphingosine (lyso-Gb1) is a hallmark...
+                    </div>
+                    <div className="bg-blue-950/30 border border-blue-900/50 p-2 rounded-lg text-xs text-slate-300 opacity-70">
+                      <span className="text-slate-500">[Doc 03, Chunk 8]</span> ...chitotriosidase activity correlates with macrophage burden...
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+
+          {/* STEP 5: ANSWER */}
+          {current === 'answer' && (
+            <motion.div key="answer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col h-full gap-4">
+               <div className="flex gap-3 items-start opacity-50">
+                <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0">U</div>
+                <div className="bg-slate-800 border border-white/10 p-3 rounded-2xl rounded-tl-sm text-sm text-white line-clamp-1">
+                  What metabolites are associated with early-stage Gaucher disease Type 1?
+                </div>
+              </div>
+              <div className="flex gap-3 items-start mt-4">
+                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+                  <BrainCircuit className="w-4 h-4 text-white" />
+                </div>
+                <div className="bg-blue-600/10 border border-blue-500/20 p-4 rounded-2xl rounded-tr-sm text-sm text-white flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20"><CheckCircle2 className="w-3 h-3 inline mr-1" />Grounded via GPT-4o</span>
+                  </div>
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
+                    In early-stage Gaucher disease Type 1, the primary associated metabolites are elevated plasma <strong>glucosylsphingosine (lyso-Gb1)</strong> and increased <strong>chitotriosidase</strong> activity, reflecting lipid accumulation and macrophage activation.
+                  </motion.p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
+
+// --- MAIN APP ---
+export default function App() {
+  return (
+    <div className="min-h-screen bg-[#000000] text-[#f5f5f7] font-sans selection:bg-[#2997ff] selection:text-white relative flex flex-col lg:flex-row">
+      
+      {/* Ambient Background Glows */}
+      <div className="fixed top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-900/30 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="fixed bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-purple-900/20 rounded-full blur-[100px] pointer-events-none"></div>
+
+      {/* ========================================== */}
+      {/* LEFT PANEL: STATIC / STICKY INFO           */}
+      {/* ========================================== */}
+      <aside className="w-full lg:w-[35%] xl:w-[30%] lg:h-screen lg:sticky top-0 p-6 md:p-10 flex flex-col justify-between z-10">
+        <div className="bg-[#1d1d1f]/70 backdrop-blur-xl p-8 rounded-[2rem] h-full flex flex-col justify-between relative overflow-hidden border border-white/10 shadow-2xl">
+          {/* Inner ambient glow */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#2997ff] rounded-full blur-[80px] opacity-20"></div>
+
+          <div>
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-900 flex items-center justify-center mb-8 border border-white/20 shadow-xl">
+              <FlaskConical className="w-8 h-8 text-white" />
+            </div>
+
+            <h1 className="text-4xl font-bold tracking-tight mb-2 text-white">MedDiscover</h1>
+            <h2 className="text-lg text-slate-400 font-medium mb-6">
+              Domain-Specific RAG for <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 font-bold">Metabolomics Knowledge</span>
+            </h2>
+
+            <p className="text-slate-300 leading-relaxed font-light text-sm mb-8">
+              An open-source Retrieval-Augmented Generation implementation and benchmark framework. Addressing the literature management challenges in biomarker discovery and metabolic disorders (ICD-10 E70–E88).
+            </p>
+
+            <div className="flex flex-wrap gap-2 mb-8">
+              <span className="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-xs text-slate-300">MedCPT</span>
+              <span className="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-xs text-slate-300">FAISS</span>
+              <span className="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-xs text-slate-300">GPT-4o</span>
+              <span className="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-xs text-slate-300">RAGAS Eval</span>
+            </div>
+
+            <div className="space-y-4">
+              <a href="#demo" className="flex items-center gap-4 text-slate-300 hover:text-white transition-colors group">
+                <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#2997ff] transition-all">
+                  <Activity className="w-4 h-4" />
+                </div>
+                <span className="font-medium text-sm">Interactive Demo</span>
+              </a>
+              <a href="#benchmarks" className="flex items-center gap-4 text-slate-300 hover:text-white transition-colors group">
+                <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-purple-500 transition-all">
+                  <Database className="w-4 h-4" />
+                </div>
+                <span className="font-medium text-sm">Evaluation Benchmarks</span>
+              </a>
+              <a href="#team" className="flex items-center gap-4 text-slate-300 hover:text-white transition-colors group">
+                <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-emerald-500 transition-all">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <span className="font-medium text-sm">Research Team</span>
+              </a>
+            </div>
+          </div>
+
+          <div className="mt-12 pt-6 border-t border-white/10 flex gap-4">
+            <a href="https://github.com/VatsalPatel18/MedDiscover" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all">
+              <Github className="w-5 h-5" />
+            </a>
+            <a href="https://huggingface.co/spaces/VatsalPatel18/MedDisover-space" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-amber-400 hover:text-black transition-all text-sm font-bold">
+              HF
+            </a>
+          </div>
+        </div>
+      </aside>
+
+      {/* ========================================== */}
+      {/* RIGHT PANEL: SCROLLING CONTENT             */}
+      {/* ========================================== */}
+      <main className="w-full lg:w-[65%] xl:w-[70%] p-6 md:p-12 pb-32 space-y-24 overflow-y-auto">
+
+        {/* --- HERO / OVERVIEW --- */}
+        <section id="overview" className="mt-12 lg:mt-0">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h3 className="text-xs font-bold tracking-widest text-[#2997ff] uppercase mb-2">CSBJ Journal Publication</h3>
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">Evidence-Grounded Knowledge Extraction.</h2>
+            <p className="text-lg text-slate-400 font-light max-w-3xl leading-relaxed mb-8">
+              General-purpose LLMs struggle with biomedical hallucination and dynamic knowledge integration. <strong className="text-white font-medium">MedDiscover</strong> introduces a two-tier RAG benchmark (Gold expert-curated & Silver synthetic) specifically instantiated for metabolomics, providing transparent, reproducible evaluation of retrieval augmentation.
+            </p>
+            <div className="flex flex-wrap gap-4">
+               <a href="#" className="bg-white text-black px-6 py-3 rounded-full text-sm font-semibold hover:bg-slate-200 transition-colors flex items-center gap-2">
+                 <FileText className="w-4 h-4" /> Read Manuscript
+               </a>
+               <a href="#huggingface" className="bg-[#1d1d1f] border border-white/10 text-white px-6 py-3 rounded-full text-sm font-semibold hover:bg-white/10 transition-colors flex items-center gap-2">
+                 <ExternalLink className="w-4 h-4" /> View HF Space
+               </a>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* --- ANIMATED DEMO SECTION --- */}
+        <section id="demo">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h3 className="text-xs font-bold tracking-widest text-slate-500 uppercase mb-2">Live Process</h3>
+            <h2 className="text-3xl font-bold mb-8">How MedDiscover Works</h2>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              <div className="lg:col-span-5 space-y-6">
+                <div className="bg-[#1d1d1f]/50 p-6 rounded-2xl border border-white/5">
+                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mb-4"><Database className="text-blue-400 w-5 h-5"/></div>
+                  <h4 className="text-white font-bold mb-2">1. Domain-Specific Indexing</h4>
+                  <p className="text-sm text-slate-400">Papers are chunked (500 tokens) and embedded using MedCPT, trained specifically on PubMed abstracts.</p>
+                </div>
+                <div className="bg-[#1d1d1f]/50 p-6 rounded-2xl border border-white/5">
+                  <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center mb-4"><Search className="text-purple-400 w-5 h-5"/></div>
+                  <h4 className="text-white font-bold mb-2">2. Semantic Retrieval</h4>
+                  <p className="text-sm text-slate-400">FAISS efficiently searches the dense vector space to find the Top-K most relevant biomedical contexts.</p>
+                </div>
+                <div className="bg-[#1d1d1f]/50 p-6 rounded-2xl border border-white/5">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center mb-4"><ShieldCheck className="text-emerald-400 w-5 h-5"/></div>
+                  <h4 className="text-white font-bold mb-2">3. Grounded Generation</h4>
+                  <p className="text-sm text-slate-400">GPT-4o synthesizes the answer, strictly bound to the retrieved contexts to prevent hallucination.</p>
+                </div>
+              </div>
+              <div className="lg:col-span-7">
+                <RAGSimulation />
+              </div>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* --- BENCHMARKS --- */}
+        <section id="benchmarks">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+             <h3 className="text-xs font-bold tracking-widest text-slate-500 uppercase mb-2">Performance Metrics</h3>
+             <h2 className="text-3xl font-bold mb-4">Silver Benchmark Results</h2>
+             <p className="text-slate-400 mb-8 max-w-2xl text-sm leading-relaxed">
+               Evaluating 600 synthetic QA pairs across 100 papers. While general-purpose embeddings (Ada-002) provide a strong baseline, domain-specific embeddings (<strong className="text-blue-400">MedCPT</strong>) yield a statistically significant improvement in Answer Correctness (<span className="italic">p = 5.72×10⁻¹¹</span>).
+             </p>
+
+             <div className="bg-[#1d1d1f]/70 border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl">
+               <div className="h-[350px] w-full">
+                 <ResponsiveContainer width="100%" height="100%">
+                   <BarChart data={BENCHMARK_DATA} margin={{ top: 20, right: 30, left: 0, bottom: 5 }} barGap={8}>
+                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+                     <XAxis dataKey="metric" tick={{ fill: '#888', fontSize: 12 }} axisLine={false} tickLine={false} dy={10} />
+                     <YAxis domain={[0.6, 1.0]} tick={{ fill: '#888', fontSize: 12 }} axisLine={false} tickLine={false} dx={-10} />
+                     <Tooltip 
+                       cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                       contentStyle={{ backgroundColor: '#000', borderColor: '#333', borderRadius: '12px', color: '#fff' }}
+                       itemStyle={{ color: '#fff' }}
+                     />
+                     <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
+                     <Bar dataKey="Ada" name="OpenAI Ada-002" fill="#475569" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                     <Bar dataKey="MedCPT" name="MedCPT (Domain-Specific)" fill="#2997ff" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                   </BarChart>
+                 </ResponsiveContainer>
+               </div>
+               <div className="mt-6 p-4 bg-blue-500/10 rounded-xl border border-blue-500/20 text-sm text-blue-200 flex items-start gap-3">
+                 <Activity className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                 <p><strong>Key Finding:</strong> MedCPT improves answer correctness by effectively capturing nuanced relationships specific to medical terminology and biological pathways, bridging the gap for specialized knowledge extraction.</p>
+               </div>
+             </div>
+          </motion.div>
+        </section>
+
+        {/* --- HUGGING FACE EMBED PLACEHOLDER --- */}
+        <section id="huggingface">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h3 className="text-xs font-bold tracking-widest text-amber-500 uppercase mb-2">Try it Live</h3>
+            <h2 className="text-3xl font-bold mb-6">Hugging Face ZeroGPU Space</h2>
+            
+            <div className="w-full bg-[#1d1d1f] rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden relative group">
+              {/* Fake browser header */}
+              <div className="bg-[#2d2d2f] px-4 py-3 flex items-center border-b border-white/5">
+                <div className="flex gap-1.5 mr-4">
+                  <div className="w-3 h-3 rounded-full bg-slate-600"></div>
+                  <div className="w-3 h-3 rounded-full bg-slate-600"></div>
+                  <div className="w-3 h-3 rounded-full bg-slate-600"></div>
+                </div>
+                <div className="flex-1 bg-black/30 rounded-md text-xs text-center py-1 text-slate-400 border border-white/5 font-mono">
+                  huggingface.co/spaces/VatsalPatel18/MedDiscover-space
+                </div>
+              </div>
+              
+              {/* IFRAME PLACEHOLDER */}
+              <div className="aspect-[16/10] md:aspect-[16/8] relative bg-[#0b0f19] flex items-center justify-center">
+                 <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1635830625698-3b9bd74671ca?q=80&w=2000&auto=format&fit=crop')] opacity-10 bg-cover bg-center"></div>
+                 
+                 <div className="text-center relative z-10 p-8">
+                   <img src="https://cdn.simpleicons.org/huggingface/FFD21E" alt="Hugging Face" className="w-16 h-16 mx-auto mb-6 drop-shadow-lg" />
+                   <h3 className="text-2xl font-bold text-white mb-4">Interactive App Loaded Here</h3>
+                   <p className="text-slate-400 text-sm max-w-md mx-auto mb-6">
+                     When deploying the actual site, this container will hold the <code className="bg-white/10 px-1 rounded">iframe</code> pointing to your Gradio ZeroGPU space, allowing users to upload PDFs and query OSS models (TinyLlama, Phi-3) directly.
+                   </p>
+                   <a href="https://huggingface.co/spaces/VatsalPatel18/MedDisover-space" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-amber-500 text-black font-bold text-sm hover:bg-amber-400 transition-colors">
+                     Open in Hugging Face <ExternalLink className="w-4 h-4" />
+                   </a>
+                 </div>
+              </div>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* --- RESEARCH TEAM BENTO --- */}
+        <section id="team" className="border-t border-white/5 pt-20">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h3 className="text-xs font-bold tracking-widest text-emerald-500 uppercase mb-2">The People</h3>
+            <h2 className="text-3xl font-bold mb-8">Research Team</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {TEAM.map((member, idx) => (
+                <div key={idx} className="bg-[#1d1d1f]/50 p-6 rounded-2xl border border-white/5 hover:bg-[#1d1d1f] hover:border-white/20 transition-all group">
+                  <div className="w-16 h-16 rounded-full bg-slate-800 mb-4 flex items-center justify-center text-xl font-bold text-slate-400 border border-white/10 group-hover:border-emerald-500/50 transition-colors">
+                    {member.name.charAt(0)}
+                  </div>
+                  <h4 className="text-white font-bold">{member.name}</h4>
+                  <p className="text-xs text-emerald-400 font-medium uppercase tracking-wide mt-1 mb-3">{member.role}</p>
+                  <p className="text-sm text-slate-400 font-light">{member.focus}</p>
+                  <p className="text-[10px] text-slate-600 mt-4">IU Internationale Hochschule GmbH</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </section>
+
+      </main>
+    </div>
+  );
+}
