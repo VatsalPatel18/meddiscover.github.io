@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedDiscover - Evidence-Grounded RAG Benchmark</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lexend:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            /* PALETTE: Navy & Teal (From PelliScope) */
+            --hf-dark-900: #0f172a;
+            --hf-dark-800: #1e293b;
+            --hf-dark-700: #334155;
+            
+            /* Main accent is Teal */
+            --hf-accent-main: #0d9488;
+            --hf-accent-main-dark: #0f766e;
+            --hf-accent-soft: rgba(20, 184, 166, 0.08);
+
+            /* Secondary accent is Navy Blue */
+            --hf-accent-sec: #1e40af;
+            --hf-accent-sec-dark: #1e3a8a;
+            --hf-accent-sec-soft: #eff6ff;
+        }
+
+        body {
+            background-color: #cbd5e1;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 24px 12px;
+            overflow: auto;
+        }
+
+        .font-display {
+            font-family: 'Lexend', sans-serif;
+        }
+
+        /* The Slide Container */
+        .deck-container {
+            width: min(1240px, 100%);
+            height: 877px; 
+            background: #ffffff;
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.3);
+            border-radius: 24px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Individual Slide Styling */
+        .slide {
+            display: none; 
+            height: 100%;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+        }
+
+        .slide.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* Animation Fragments */
+        .fragment {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .fragment.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Header Consistency */
+        .hf-hero {
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            height: 110px;
+            flex-shrink: 0;
+        }
+
+        .hf-title-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--hf-accent-main);
+            font-size: 2.2rem;
+        }
+
+        /* Analysis Card Visuals */
+        .analysis-card {
+            background: linear-gradient(135deg, white, #f0f9ff);
+            border: 1px solid #e0f2fe;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #ccfbf1, var(--hf-accent-main));
+        }
+
+        /* Operational impact visuals */
+        .roi-card {
+            background: #0f172a;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        .roi-card::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: var(--hf-accent-main);
+            opacity: 0.1;
+            border-radius: 50%;
+            filter: blur(60px);
+        }
+
+        @keyframes growWidth {
+            from { width: 0; }
+            to { width: var(--target-width); }
+        }
+        .bar-animate.visible {
+            animation: growWidth 1.5s ease-out forwards;
+        }
+
+        /* Flowchart styling */
+        .flow-node {
+            background: white;
+            border: 2px solid var(--hf-accent-main);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--hf-dark-800);
+            box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.1);
+            z-index: 10;
+        }
+        
+        .flow-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            font-size: 1.5rem;
+            margin: 10px 0;
+        }
+
+        /* Navigation Controls */
+        .nav-controls {
+            position: absolute;
+            bottom: 40px;
+            right: 32px;
+            display: flex;
+            gap: 12px;
+            z-index: 50;
+        }
+
+        .nav-btn {
+            background: var(--hf-dark-900);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.2;
+        }
+
+        .nav-btn:hover,
+        .nav-btn:focus-visible {
+            background: var(--hf-accent-main);
+            opacity: 1;
+        }
+
+        .nav-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            opacity: 0.35;
+        }
+
+        .nav-btn.action-mode {
+            background: var(--hf-accent-sec);
+            opacity: 1;
+        }
+
+        .nav-btn.action-mode:hover {
+            background: var(--hf-accent-sec-dark);
+        }
+
+        .slide-indicator {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            transition: all 0.3s;
+            opacity: 0.35;
+        }
+
+        .dot.active {
+            background: var(--hf-accent-main);
+            width: 30px;
+            border-radius: 10px;
+            opacity: 0.8;
+        }
+
+        .profile-img-container {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 4px solid var(--hf-accent-sec-soft);
+            margin: 0 auto 16px auto;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="deck-container">
+        
+        <!-- ========================== -->
+        <!-- SLIDE 1: THE PROBLEM & THE SOLUTION -->
+        <!-- ========================== -->
+        <div class="slide active" id="slide-1">
+            <header class="hf-hero px-12 flex items-center justify-between relative">
+                <div class="flex items-center gap-5">
+                    <span class="hf-title-icon">
+                        <i class="fa-solid fa-dna"></i>
+                    </span>
+                    <div class="flex flex-col justify-center">
+                        <h1 class="font-display text-3xl font-bold text-slate-800">MedDiscover</h1>
+                        <h2 class="text-lg font-medium text-slate-600">Evidence-Grounded Knowledge Extraction in Metabolomics</h2>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-grow p-12 flex flex-col justify-between bg-white">
+                <h3 class="text-sm font-semibold tracking-widest text-slate-400 uppercase mb-2">01 | The Problem & The Solution</h3>
+                
+                <div class="grid grid-cols-12 gap-12 h-full">
+                    <!-- Left: Problem Context -->
+                    <div class="col-span-5 flex flex-col justify-center">
+                        <h2 class="font-display text-4xl font-bold text-slate-800 mb-6 leading-tight">General LLMs Hallucinate. <br><span class="text-[var(--hf-accent-main)]">Precision Medicine Cannot.</span></h2>
+                        
+                        <div class="bg-slate-50 rounded-xl p-6 border border-slate-100 shadow-sm">
+                            <h4 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-4">The Biomedical Challenge</h4>
+                            <ul class="space-y-5">
+                                <li class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-[var(--hf-accent-main)] flex-shrink-0">
+                                        <i class="fa-solid fa-chart-line text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="font-bold text-slate-800">High-Dimensional Data</h5>
+                                        <p class="text-xs text-slate-500">Metabolomic datasets are complex and inherently sparse (p &gg; n).</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-[var(--hf-accent-main)] flex-shrink-0">
+                                        <i class="fa-solid fa-book-medical text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="font-bold text-slate-800">Expanding Literature</h5>
+                                        <p class="text-xs text-slate-500">PubMed repositories scale faster than static model retraining cycles.</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-[var(--hf-accent-main)] flex-shrink-0">
+                                        <i class="fa-solid fa-microscope text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="font-bold text-slate-800">Complex Terminology</h5>
+                                        <p class="text-xs text-slate-500">General tokenizers fragment vital clinical terms, causing domain mismatch.</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Right: Query Mockup (Fragment 1) -->
+                    <div class="col-span-7 flex flex-col items-center justify-center fragment">
+                        <div class="analysis-card rounded-2xl p-6 w-full shadow-lg">
+                            <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                <i class="fa-solid fa-terminal text-slate-400"></i> Query: "Metabolites linked to early-stage Gaucher disease?"
+                            </h3>
+                            
+                            <!-- Bad Output -->
+                            <div class="bg-white border border-rose-100 rounded-xl p-4 shadow-sm mb-4 relative overflow-hidden">
+                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-rose-400"></div>
+                                <div class="flex justify-between items-start mb-2 pl-2">
+                                    <span class="text-xs font-bold text-rose-600 uppercase tracking-widest"><i class="fa-solid fa-triangle-exclamation"></i> Low Grounding (Standard LLM)</span>
+                                </div>
+                                <p class="text-sm text-slate-600 pl-2 leading-relaxed">"Gaucher disease is associated with general lipid accumulation and variations in glucose metabolism..." <span class="text-xs text-slate-400 italic block mt-1">(Plausible, but generic and unverified)</span></p>
+                            </div>
+
+                            <!-- Good Output -->
+                            <div class="bg-white border border-teal-100 rounded-xl p-4 shadow-sm relative overflow-hidden">
+                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-teal-500"></div>
+                                <div class="flex justify-between items-start mb-2 pl-2">
+                                    <span class="text-xs font-bold text-[var(--hf-accent-main-dark)] uppercase tracking-widest"><i class="fa-solid fa-shield-check"></i> Evidence Verified (MedDiscover)</span>
+                                    <span class="text-[10px] bg-teal-50 text-teal-700 px-2 py-1 rounded font-mono border border-teal-100">ICD-10 E70-E88</span>
+                                </div>
+                                <p class="text-sm text-slate-800 pl-2 leading-relaxed font-medium">"Elevated plasma levels of glucosylsphingosine (lyso-Gb1) serve as a primary biomarker, showing a 15-fold increase."</p>
+                                <div class="pl-2 mt-3 flex items-center gap-2">
+                                    <span class="bg-slate-100 text-slate-500 text-[10px] px-2 py-1 rounded font-semibold"><i class="fa-solid fa-file-lines mr-1"></i> Source: Extracted context chunk #402</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Actions (Fragment 2) -->
+                <div class="mt-6 flex items-center gap-4 fragment">
+                    <a href="#" class="inline-flex items-center justify-center gap-2 bg-[var(--hf-accent-sec)] hover:bg-[var(--hf-accent-sec-dark)] text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition">
+                        <i class="fa-solid fa-file-pdf"></i> Read Full Paper
+                    </a>
+                    <a href="https://github.com/VatsalPatel18/MedDiscover" target="_blank" class="inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition">
+                        <i class="fa-brands fa-github"></i> View Repository
+                    </a>
+                </div>
+            </main>
+        </div>
+
+        <!-- ========================== -->
+        <!-- SLIDE 2: METHODOLOGY -->
+        <!-- ========================== -->
+        <div class="slide" id="slide-2">
+            <header class="hf-hero px-12 flex items-center justify-between relative">
+                <div class="flex items-center gap-5">
+                    <span class="hf-title-icon">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </span>
+                    <div class="flex flex-col justify-center">
+                        <h1 class="font-display text-3xl font-bold text-slate-800">Benchmark Architecture</h1>
+                        <h2 class="text-lg font-medium text-slate-600">Evaluating RAG with Unprecedented Transparency</h2>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-grow p-12 bg-slate-50 flex gap-10">
+                
+                <!-- Left: Pipeline Flow -->
+                <div class="w-1/2 flex flex-col justify-center">
+                    <h3 class="text-sm font-semibold tracking-widest text-slate-400 uppercase mb-6">02 | Data Pipeline</h3>
+                    
+                    <div class="flex flex-col items-center w-full max-w-sm mx-auto">
+                        <div class="flow-node w-full">
+                            <i class="fa-solid fa-file-pdf text-rose-500 text-2xl mb-2"></i>
+                            <div class="font-bold text-lg">PDF Extraction</div>
+                            <div class="text-xs text-slate-500 font-normal mt-1">Raw text processing & cleaning</div>
+                        </div>
+                        
+                        <div class="flow-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+                        
+                        <div class="flow-node w-full">
+                            <i class="fa-solid fa-scissors text-[var(--hf-accent-main)] text-2xl mb-2"></i>
+                            <div class="font-bold text-lg">Semantic Chunking</div>
+                            <div class="text-xs text-slate-500 font-normal mt-1">500-token windows, 50-token overlap</div>
+                        </div>
+
+                        <div class="flow-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+
+                        <div class="flow-node w-full bg-[#0f172a] text-white border-none shadow-xl">
+                            <i class="fa-solid fa-database text-teal-400 text-2xl mb-2"></i>
+                            <div class="font-bold text-lg text-white">FAISS Vector Index</div>
+                            <div class="text-xs text-slate-400 font-normal mt-1">Dual embeddings (Ada & MedCPT)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: The Split -->
+                <div class="w-1/2 flex flex-col justify-center gap-6">
+                    <h3 class="text-sm font-semibold tracking-widest text-slate-400 uppercase mb-2">The Two-Tier Dataset</h3>
+
+                    <!-- Top Card (Gold) - Fragment 1 -->
+                    <div class="bg-white rounded-2xl p-6 border border-amber-200 shadow-sm relative overflow-hidden fragment">
+                        <div class="absolute right-0 top-0 bottom-0 w-2 bg-gradient-to-b from-amber-300 to-amber-500"></div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="font-display font-bold text-xl text-slate-800">Gold Set</h4>
+                                <span class="text-xs font-bold uppercase tracking-widest text-amber-600 bg-amber-50 px-2 py-1 rounded">Expert-Curated</span>
+                            </div>
+                            <i class="fa-solid fa-medal text-amber-400 text-3xl opacity-50"></i>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-3">
+                            <div>
+                                <div class="text-3xl font-display font-bold text-slate-800">10</div>
+                                <div class="text-xs text-slate-500 uppercase tracking-wide">Research Papers</div>
+                            </div>
+                            <div>
+                                <div class="text-3xl font-display font-bold text-slate-800">30</div>
+                                <div class="text-xs text-slate-500 uppercase tracking-wide">QA Pairs</div>
+                            </div>
+                        </div>
+                        <p class="text-sm text-slate-600 mt-2 font-medium">Focused specifically on Gaucher disease (Type 1), NAFLD, and Type 1 diabetes with traceable references.</p>
+                    </div>
+
+                    <!-- Bottom Card (Silver) - Fragment 2 -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden fragment">
+                        <div class="absolute right-0 top-0 bottom-0 w-2 bg-gradient-to-b from-slate-300 to-slate-400"></div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="font-display font-bold text-xl text-slate-800">Silver Set</h4>
+                                <span class="text-xs font-bold uppercase tracking-widest text-slate-500 bg-slate-100 px-2 py-1 rounded">Synthetic & Scalable</span>
+                            </div>
+                            <i class="fa-solid fa-robot text-slate-300 text-3xl"></i>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-3">
+                            <div>
+                                <div class="text-3xl font-display font-bold text-slate-800">100</div>
+                                <div class="text-xs text-slate-500 uppercase tracking-wide">Research Papers</div>
+                            </div>
+                            <div>
+                                <div class="text-3xl font-display font-bold text-slate-800">~600</div>
+                                <div class="text-xs text-slate-500 uppercase tracking-wide">Synthetic QA Pairs</div>
+                            </div>
+                        </div>
+                        <p class="text-sm text-slate-600 mt-2 font-medium">Retrievability-filtered questions drawn from ICD-10 E70–E88 metabolic disorders for robust stress-testing.</p>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+
+        <!-- ========================== -->
+        <!-- SLIDE 3: THE ENGINE (Embeddings) -->
+        <!-- ========================== -->
+        <div class="slide" id="slide-3">
+            <header class="hf-hero px-12 flex items-center justify-between relative">
+                <div class="flex items-center gap-5">
+                    <span class="hf-title-icon">
+                        <i class="fa-solid fa-microchip"></i>
+                    </span>
+                    <div class="flex flex-col justify-center">
+                        <h1 class="font-display text-3xl font-bold text-slate-800">The Retrieval Engine</h1>
+                        <h2 class="text-lg font-medium text-slate-600">Optimizing Vector Embeddings for Metabolomics</h2>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-grow p-12 bg-white flex gap-10">
+                
+                <!-- Left: Experimental Setup -->
+                <div class="w-5/12 flex flex-col justify-center">
+                    <h3 class="text-sm font-semibold tracking-widest text-slate-400 uppercase mb-4">03 | Experimental Setup</h3>
+                    
+                    <h2 class="font-display text-3xl font-bold text-slate-800 mb-6 leading-tight">Isolating the <br><span class="text-[var(--hf-accent-main)]">Retrieval Effect</span></h2>
+                    
+                    <p class="text-slate-600 mb-6 leading-relaxed">
+                        To guarantee fairness and prevent confounding variables, we strictly fixed the decoder generation parameters across all benchmarks.
+                    </p>
+
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-4">
+                            <i class="fa-solid fa-lock text-[var(--hf-accent-sec)] mt-1"></i>
+                            <div>
+                                <h4 class="font-bold text-slate-800">Fixed Decoder</h4>
+                                <p class="text-sm text-slate-500">All primary comparisons utilize GPT-4o as the generator.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <i class="fa-solid fa-compress text-[var(--hf-accent-sec)] mt-1"></i>
+                            <div>
+                                <h4 class="font-bold text-slate-800">Strict Output Constraints</h4>
+                                <p class="text-sm text-slate-500">Outputs capped at exactly <strong>25 tokens</strong>. This forces the model to be extremely concise and prevents verbosity from artificially inflating metrics.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Bar Chart Visual (Fragment 1) -->
+                <div class="w-7/12 flex flex-col justify-center fragment">
+                    <div class="bg-slate-50 rounded-2xl p-8 border border-slate-200 shadow-inner w-full">
+                        <h4 class="font-bold text-slate-800 text-lg mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-bar text-slate-400"></i> Retrieval Grounding Performance
+                        </h4>
+                        <p class="text-xs text-slate-500 mb-8 uppercase tracking-widest font-semibold">Embedding Model Comparison</p>
+                        
+                        <div class="space-y-8">
+                            <!-- Non-RAG -->
+                            <div>
+                                <div class="flex justify-between items-end mb-2">
+                                    <span class="text-sm font-bold text-slate-600">Non-RAG Baseline (GPT-4o)</span>
+                                </div>
+                                <div class="w-full h-6 bg-slate-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-slate-400 bar-animate" style="--target-width: 30%"></div>
+                                </div>
+                                <p class="text-[10px] text-slate-500 mt-1 text-right">Poor factual grounding</p>
+                            </div>
+
+                            <!-- Ada-002 -->
+                            <div>
+                                <div class="flex justify-between items-end mb-2">
+                                    <span class="text-sm font-bold text-slate-800">OpenAI Ada-002</span>
+                                    <span class="text-[10px] font-mono bg-blue-100 text-blue-800 px-2 py-0.5 rounded">1,536 Dimensions</span>
+                                </div>
+                                <div class="w-full h-6 bg-slate-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-blue-500 bar-animate" style="--target-width: 70%"></div>
+                                </div>
+                                <p class="text-[10px] text-slate-500 mt-1 text-right">General-purpose capability</p>
+                            </div>
+
+                            <!-- MedCPT -->
+                            <div>
+                                <div class="flex justify-between items-end mb-2">
+                                    <span class="text-sm font-bold text-[var(--hf-accent-main-dark)] flex items-center gap-2">
+                                        MedCPT
+                                        <span class="bg-[var(--hf-accent-main)] text-white text-[10px] px-2 py-0.5 rounded uppercase tracking-widest">Optimized</span>
+                                    </span>
+                                    <span class="text-[10px] font-mono bg-teal-100 text-teal-800 px-2 py-0.5 rounded border border-teal-200">768 Dimensions</span>
+                                </div>
+                                <div class="w-full h-8 bg-teal-50 rounded-full overflow-hidden border border-[var(--hf-accent-main)] p-0.5">
+                                    <div class="h-full bg-[var(--hf-accent-main)] rounded-full bar-animate" style="--target-width: 82%"></div>
+                                </div>
+                                <p class="text-[10px] text-[var(--hf-accent-main-dark)] mt-1 font-semibold text-right">Higher precision at half the vector size</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+
+        <!-- ========================== -->
+        <!-- SLIDE 4: EXPERT RESULTS -->
+        <!-- ========================== -->
+        <div class="slide" id="slide-4">
+            <header class="hf-hero px-12 flex items-center justify-between relative">
+                <div class="flex items-center gap-5">
+                    <span class="hf-title-icon">
+                        <i class="fa-solid fa-user-check"></i>
+                    </span>
+                    <div class="flex flex-col justify-center">
+                        <h1 class="font-display text-3xl font-bold text-slate-800">Expert Validation</h1>
+                        <h2 class="text-lg font-medium text-slate-600">Results from the Gold QA Set</h2>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-grow p-12 bg-white flex flex-col">
+                <h3 class="text-sm font-semibold tracking-widest text-slate-400 uppercase mb-8 text-center">04 | Reference-Based Validation</h3>
+                
+                <div class="grid grid-cols-3 gap-8 h-full pb-4">
+                    
+                    <!-- Card 1 (Fragment 1) -->
+                    <div class="bg-slate-50 rounded-2xl p-8 border border-slate-100 shadow-sm flex flex-col fragment relative overflow-hidden group hover:border-[var(--hf-accent-main)] transition-colors">
+                        <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:bg-[var(--hf-accent-main)] group-hover:text-white transition-colors">
+                            <i class="fa-solid fa-shield"></i>
+                        </div>
+                        <h4 class="font-bold text-xl text-slate-800 mb-3">Faithfulness Surge</h4>
+                        <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                            Retrieval augmentation profoundly improves factual grounding. RAG pipelines ensured generated claims were directly supported by evidence, vastly outperforming the non-RAG baseline.
+                        </p>
+                        <div class="mt-auto bg-white p-3 rounded-lg border border-slate-200 text-center">
+                            <span class="text-xs font-bold text-slate-500 uppercase">RAG vs Baseline</span>
+                            <div class="text-[var(--hf-accent-main-dark)] font-bold text-lg mt-1"><i class="fa-solid fa-arrow-up-right-dots mr-1"></i> Significant Gain</div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2 (Fragment 2) -->
+                    <div class="bg-slate-50 rounded-2xl p-8 border border-slate-100 shadow-sm flex flex-col fragment relative overflow-hidden group hover:border-[var(--hf-accent-main)] transition-colors delay-100">
+                        <div class="w-14 h-14 bg-teal-100 text-teal-600 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:bg-[var(--hf-accent-main)] group-hover:text-white transition-colors">
+                            <i class="fa-solid fa-bullseye"></i>
+                        </div>
+                        <h4 class="font-bold text-xl text-slate-800 mb-3">Context Precision</h4>
+                        <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                            On the Gold Set, differences between MedCPT and Ada are modest. Both retrieval mechanisms successfully located highly relevant chunks, showing single-stage dense retrieval is effective.
+                        </p>
+                        <div class="mt-auto bg-white p-3 rounded-lg border border-slate-200 text-center">
+                            <span class="text-xs font-bold text-slate-500 uppercase">Embedding Gap</span>
+                            <div class="text-slate-700 font-bold text-lg mt-1"><i class="fa-solid fa-equals mr-1"></i> Comparable Results</div>
+                        </div>
+                    </div>
+
+                    <!-- Card 3 (Fragment 3) -->
+                    <div class="bg-slate-50 rounded-2xl p-8 border border-slate-100 shadow-sm flex flex-col fragment relative overflow-hidden group hover:border-slate-800 transition-colors delay-200">
+                        <div class="w-14 h-14 bg-slate-200 text-slate-700 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:bg-slate-800 group-hover:text-white transition-colors">
+                            <i class="fa-solid fa-magnifying-glass-chart"></i>
+                        </div>
+                        <h4 class="font-bold text-xl text-slate-800 mb-3">The "Black-Box" Insight</h4>
+                        <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                            NotebookLM demonstrated strong lexical overlap under "minimal-output" prompting. However, its closed architecture does not expose retrieved contexts.
+                        </p>
+                        <div class="mt-auto bg-rose-50 p-3 rounded-lg border border-rose-100 text-center">
+                            <span class="text-xs font-bold text-rose-500 uppercase"><i class="fa-solid fa-triangle-exclamation"></i> Limitation</span>
+                            <div class="text-rose-700 font-bold text-sm mt-1">Unviable for Clinical Audits</div>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+
+        <!-- ========================== -->
+        <!-- SLIDE 5: STRESS-TESTING AT SCALE -->
+        <!-- ========================== -->
+        <div class="slide" id="slide-5">
+            <header class="hf-hero px-12 flex items-center justify-between relative">
+                <div class="flex items-center gap-5">
+                    <span class="hf-title-icon">
+                        <i class="fa-solid fa-weight-hanging"></i>
+                    </span>
+                    <div class="flex flex-col justify-center">
+                        <h1 class="font-display text-3xl font-bold text-slate-800">Stress-Testing at Scale</h1>
+                        <h2 class="text-lg font-medium text-slate-600">Evaluating Robustness on 600 Synthetic QA Pairs</h2>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-grow px-12 pt-8 pb-12 bg-white flex gap-10">
+                
+                <!-- Left: Stat Details -->
+                <div class="w-5/12 flex flex-col justify-center">
+                    <h3 class="text-sm font-semibold tracking-widest text-slate-400 uppercase mb-4">05 | Silver Benchmark Analysis</h3>
+                    
+                    <h2 class="font-display text-3xl font-bold text-slate-800 mb-6 leading-tight">Domain Specificity <br><span class="text-[var(--hf-accent-main)]">Wins Answer Correctness</span></h2>
+                    
+                    <p class="text-slate-600 mb-6 leading-relaxed">
+                        To validate our findings, we utilized rank-based, non-parametric methods appropriate for non-normal score distributions.
+                    </p>
+
+                    <div class="space-y-5 bg-slate-50 p-6 rounded-xl border border-slate-200">
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wide">Mann-Whitney U Test</h4>
+                            <p class="text-xs text-slate-500 mt-1">Confirmed a statistically significant separation between embedding performances under a fixed decoder.</p>
+                        </div>
+                        <hr class="border-slate-200">
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wide">Cliff's Delta (&delta; = 0.303)</h4>
+                            <p class="text-xs text-slate-500 mt-1">A non-parametric effect size measure indicating a small-to-moderate practical separation favoring MedCPT.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Impact Card (Fragment 1) -->
+                <div class="w-7/12 flex flex-col h-full fragment">
+                    <div class="roi-card rounded-2xl p-8 flex flex-col justify-center h-full shadow-2xl border-t-4 border-[var(--hf-accent-main)] h-full">
+                        
+                        <div class="text-center relative z-10">
+                            <div class="inline-block bg-white/10 px-4 py-1.5 rounded-full border border-white/20 mb-6">
+                                <span class="text-xs uppercase tracking-widest font-bold text-teal-300">Common-Language Effect Size</span>
+                            </div>
+                            
+                            <!-- Massive Number -->
+                            <h2 class="text-8xl font-display font-extrabold text-white mb-2 tracking-tighter counter" data-target="65.1">0%</h2>
+                            
+                            <p class="text-xl text-slate-300 font-medium max-w-sm mx-auto leading-snug">
+                                Probability of <strong class="text-teal-400">MedCPT</strong> achieving a higher Answer Correctness score than Ada.
+                            </p>
+                        </div>
+
+                        <div class="mt-auto relative z-10 pt-8">
+                            <div class="bg-black/30 p-4 rounded-xl border border-slate-700/50 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30">
+                                        <i class="fa-solid fa-chart-line"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-0.5">Statistical Significance</div>
+                                        <div class="text-sm text-white font-mono">p = 5.72 &times; 10<sup>-11</sup></div>
+                                    </div>
+                                </div>
+                                <span class="text-xs bg-teal-900 text-teal-200 px-3 py-1 rounded border border-teal-700 font-semibold">Highly Significant</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </main>
+        </div>
+
+        <!-- ========================== -->
+        <!-- SLIDE 6: CONCLUSION & ROADMAP -->
+        <!-- ========================== -->
+        <div class="slide" id="slide-6">
+            <header class="hf-hero px-12 flex items-center justify-between relative">
+                <div class="flex items-center gap-5">
+                    <span class="hf-title-icon">
+                        <i class="fa-solid fa-rocket"></i>
+                    </span>
+                    <div class="flex flex-col justify-center">
+                        <h1 class="font-display text-3xl font-bold text-slate-800">Open Science & Future Vision</h1>
+                        <h2 class="text-lg font-medium text-slate-600">What's Next for MedDiscover</h2>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-grow p-12 bg-slate-50 flex flex-col gap-8">
+                <h3 class="text-sm font-semibold tracking-widest text-slate-400 uppercase text-center">06 | The Technical Roadmap</h3>
+                
+                <div class="grid grid-cols-2 gap-10 flex-grow fragment">
+                    <!-- Box 1 -->
+                    <div class="bg-white border border-slate-200 rounded-2xl p-8 hover:border-[var(--hf-accent-sec)] transition-colors shadow-sm flex flex-col">
+                        <div class="bg-blue-100 w-16 h-16 rounded-2xl text-[var(--hf-accent-sec)] flex items-center justify-center mb-6">
+                            <i class="fa-solid fa-image text-3xl"></i>
+                        </div>
+                        <h4 class="font-display font-bold text-2xl text-slate-800 mb-3">Multimodal Integration</h4>
+                        <p class="text-slate-600 leading-relaxed text-sm flex-grow">
+                            Metabolomics relies heavily on numeric assay read-outs, LC-/GC-MS spectra, and imaging data. Future iterations will adopt multimodal embedding pipelines (vision transformers, graph networks) projected into a shared latent space for holistic querying.
+                        </p>
+                    </div>
+
+                    <!-- Box 2 -->
+                    <div class="bg-white border border-slate-200 rounded-2xl p-8 hover:border-[var(--hf-accent-sec)] transition-colors shadow-sm flex flex-col">
+                        <div class="bg-blue-100 w-16 h-16 rounded-2xl text-[var(--hf-accent-sec)] flex items-center justify-center mb-6">
+                            <i class="fa-solid fa-bolt text-3xl"></i>
+                        </div>
+                        <h4 class="font-display font-bold text-2xl text-slate-800 mb-3">Streaming Indexing</h4>
+                        <p class="text-slate-600 leading-relaxed text-sm flex-grow">
+                            Biomedical knowledge grows too quickly for periodic, batch-style index rebuilding. Implementing streaming indexing (e.g., Kafka) will permit real-time ingestion of new PubMed studies, ensuring researchers always query the absolute latest evidence.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex justify-center fragment">
+                    <a href="https://huggingface.co/spaces/VatsalPatel18/MedDisover-space" target="_blank" class="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[var(--hf-accent-main-dark)] to-[var(--hf-accent-main)] hover:shadow-xl text-white px-10 py-5 rounded-2xl font-display font-bold text-lg shadow-lg transition-all transform hover:-translate-y-1">
+                        Try the Live Demo <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </a>
+                </div>
+            </main>
+        </div>
+
+        <!-- ========================== -->
+        <!-- SLIDE 7: THE TEAM -->
+        <!-- ========================== -->
+        <div class="slide" id="slide-7">
+            <header class="hf-hero px-12 flex items-center justify-between relative">
+                <div class="flex items-center gap-5">
+                    <span class="hf-title-icon">
+                        <i class="fa-solid fa-users"></i>
+                    </span>
+                    <div class="flex flex-col justify-center">
+                        <h1 class="font-display text-3xl font-bold text-slate-800">Leadership & Research</h1>
+                        <h2 class="text-lg font-medium text-slate-600">The Authors Behind MedDiscover</h2>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-grow p-12 bg-white flex flex-col justify-center text-center">
+                <h3 class="text-sm font-semibold tracking-widest text-slate-400 uppercase mb-2">07 | Master Thesis Research Team</h3>
+                <p class="text-slate-500 mb-10 max-w-2xl mx-auto font-medium">IU Internationale Hochschule GmbH, Juri-Gagarin-Ring 152, 99084 Erfurt, Germany</p>
+                
+                <div class="grid grid-cols-3 gap-8">
+                    <!-- Member 1 -->
+                    <div class="bg-slate-50 rounded-2xl p-8 shadow-sm border border-slate-100 hover:-translate-y-1 transition-transform duration-300">
+                        <div class="profile-img-container">
+                            <i class="fa-solid fa-user text-5xl text-slate-300"></i>
+                            <!-- <img src="author1.jpg" alt="Vatsal Patel" class="w-full h-full object-cover"> -->
+                        </div>
+                        <h4 class="font-display text-xl font-bold text-slate-800">Vatsal Patel</h4>
+                        <p class="text-[var(--hf-accent-main)] font-semibold mb-2 text-sm uppercase tracking-wider">Primary Author</p>
+                        <p class="text-sm text-slate-500">Master's Candidate, Architect of MedDiscover.</p>
+                    </div>
+
+                    <!-- Member 2 -->
+                    <div class="bg-slate-50 rounded-2xl p-8 shadow-sm border border-slate-100 hover:-translate-y-1 transition-transform duration-300">
+                        <div class="profile-img-container">
+                            <i class="fa-solid fa-user text-5xl text-slate-300"></i>
+                            <!-- <img src="author2.jpg" alt="Elena Jolkver" class="w-full h-full object-cover"> -->
+                        </div>
+                        <h4 class="font-display text-xl font-bold text-slate-800">Elena Jolkver</h4>
+                        <p class="text-[var(--hf-accent-sec)] font-semibold mb-2 text-sm uppercase tracking-wider">Co-Author</p>
+                        <p class="text-sm text-slate-500">Research collaborator and validator.</p>
+                    </div>
+
+                    <!-- Member 3 -->
+                    <div class="bg-slate-50 rounded-2xl p-8 shadow-sm border border-slate-100 hover:-translate-y-1 transition-transform duration-300">
+                        <div class="profile-img-container">
+                            <i class="fa-solid fa-user text-5xl text-slate-300"></i>
+                            <!-- <img src="author3.jpg" alt="Anne Schwerk" class="w-full h-full object-cover"> -->
+                        </div>
+                        <h4 class="font-display text-xl font-bold text-slate-800">Anne Schwerk</h4>
+                        <p class="text-[var(--hf-accent-sec)] font-semibold mb-2 text-sm uppercase tracking-wider">Co-Author / Advisor</p>
+                        <p class="text-sm text-slate-500">Academic oversight and strategic direction.</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- ========================== -->
+        <!-- SHARED FOOTER & NAV -->
+        <!-- ========================== -->
+        <footer class="mt-auto bg-[var(--hf-dark-900)] text-slate-300 px-12 h-[50px] flex justify-between items-center text-xs flex-shrink-0 z-10">
+            <div class="flex space-x-6">
+                <span><i class="fa-solid fa-book-journal-whills text-teal-400 mr-1"></i> Accepted: Computational and Structural Biotechnology Journal</span>
+            </div>
+            <div class="text-slate-500">© 2026 Vatsal Patel et al.</div>
+        </footer>
+
+        <!-- Slide Indicators -->
+        <div class="slide-indicator">
+            <div class="dot active" id="dot-1"></div>
+            <div class="dot" id="dot-2"></div>
+            <div class="dot" id="dot-3"></div>
+            <div class="dot" id="dot-4"></div>
+            <div class="dot" id="dot-5"></div>
+            <div class="dot" id="dot-6"></div>
+            <div class="dot" id="dot-7"></div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="nav-controls">
+            <button class="nav-btn" onclick="goToHome()" style="text-align:center;">
+                <i class="fa-solid fa-house"></i> Home
+            </button>
+            <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)" disabled>
+                <i class="fa-solid fa-chevron-left"></i> Prev
+            </button>
+            <button class="nav-btn" id="nextBtn" onclick="handleNext()">
+                Next <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 7;
+        
+        // Track fragment visibility per slide
+        let slideSteps = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 }; 
+        
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+
+        function goToHome() {
+            document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+            
+            document.getElementById('slide-1').classList.add('active');
+            document.getElementById('dot-1').classList.add('active');
+            
+            currentSlide = 1;
+            slideSteps = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 }; 
+            
+            document.querySelectorAll('.fragment').forEach(f => f.classList.remove('visible'));
+            document.querySelectorAll('.bar-animate').forEach(b => b.classList.remove('visible'));
+            
+            updateButtons();
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+
+            if (newSlide >= 1 && newSlide <= totalSlides) {
+                // Remove active class
+                document.getElementById(`slide-${currentSlide}`).classList.remove('active');
+                document.getElementById(`dot-${currentSlide}`).classList.remove('active');
+
+                // Add active class
+                document.getElementById(`slide-${newSlide}`).classList.add('active');
+                document.getElementById(`dot-${newSlide}`).classList.add('active');
+
+                currentSlide = newSlide;
+                
+                // Reset fragments on the new slide
+                slideSteps[newSlide] = 0;
+                const slideEl = document.getElementById(`slide-${newSlide}`);
+                
+                slideEl.querySelectorAll('.fragment').forEach(f => f.classList.remove('visible'));
+                slideEl.querySelectorAll('.bar-animate').forEach(b => b.classList.remove('visible'));
+
+                updateButtons();
+            }
+        }
+
+        function handleNext() {
+            const slide = document.getElementById(`slide-${currentSlide}`);
+            const fragments = slide.querySelectorAll('.fragment');
+            
+            // Trigger fragments if available
+            if (slideSteps[currentSlide] < fragments.length) {
+                const currentFrag = fragments[slideSteps[currentSlide]];
+                currentFrag.classList.add('visible');
+                
+                // Trigger any bar animations inside the fragment
+                const bars = currentFrag.querySelectorAll('.bar-animate');
+                bars.forEach(b => b.classList.add('visible'));
+
+                // Handle counter animation specifically for slide 5
+                if(currentSlide === 5) {
+                    animateCounter();
+                }
+
+                slideSteps[currentSlide]++;
+            } else {
+                // Move to next slide if no fragments left
+                if (currentSlide < totalSlides) {
+                    changeSlide(1);
+                } else {
+                    // Action on final button click (e.g. repo link)
+                    window.open('https://github.com/VatsalPatel18/MedDiscover', '_blank');
+                }
+            }
+            // Defer button update to let fragment state settle
+            setTimeout(updateButtons, 50);
+        }
+
+        function updateButtons() {
+            if (prevBtn) prevBtn.disabled = currentSlide === 1;
+
+            if (nextBtn) {
+                const isLast = currentSlide === totalSlides;
+                const slide = document.getElementById(`slide-${currentSlide}`);
+                const fragments = slide.querySelectorAll('.fragment');
+                const done = slideSteps[currentSlide] >= fragments.length;
+                
+                if (isLast && done) {
+                    nextBtn.innerHTML = 'View Source <i class="fa-brands fa-github"></i>';
+                    nextBtn.classList.add('action-mode');
+                } else {
+                    nextBtn.innerHTML = 'Next <i class="fa-solid fa-chevron-right"></i>';
+                    nextBtn.classList.remove('action-mode');
+                }
+            }
+        }
+
+        // Counter Animation for 65.1%
+        let counted = false;
+        function animateCounter() {
+            if(counted) return;
+            const counter = document.querySelector('.counter');
+            if(!counter) return;
+            
+            const target = +counter.getAttribute('data-target');
+            const duration = 1500; // ms
+            const interval = 30; // ms
+            const steps = duration / interval;
+            const stepValue = target / steps;
+            let current = 0;
+
+            const timer = setInterval(() => {
+                current += stepValue;
+                if(current >= target) {
+                    counter.innerText = target + '%';
+                    clearInterval(timer);
+                    counted = true;
+                } else {
+                    counter.innerText = current.toFixed(1) + '%';
+                }
+            }, interval);
+        }
+    </script>
+</body>
+</html>
